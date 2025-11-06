@@ -1,0 +1,196 @@
+<ion-header [translucent]="true">
+  <ion-toolbar class="custom-toolbar">
+    <ion-title>Diet Plan</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="diet-content">
+  <div class="content-wrapper" *ngIf="todayPlan() as plan">
+      <!-- Calorie Summary -->
+      <div class="calorie-summary animate-fade-in">
+        <div class="summary-content">
+          <div class="calorie-info">
+            <h2>{{ plan.totalCalories }}</h2>
+            <p>of {{ plan.targetCalories }} cal</p>
+          </div>
+          <div class="calorie-chart">
+            <svg width="100" height="100">
+              <circle class="chart-bg" cx="50" cy="50" r="45"></circle>
+              <circle 
+                class="chart-fill" 
+                cx="50" 
+                cy="50" 
+                r="45"
+                  [style.stroke-dashoffset]="283 - (283 * calorieProgress())"
+              ></circle>
+            </svg>
+            <div class="chart-percentage">{{ (calorieProgress() * 100).toFixed(0) }}%</div>
+          </div>
+        </div>
+        <ion-progress-bar 
+          [value]="calorieProgress()" 
+          class="calorie-progress"
+        ></ion-progress-bar>
+      </div>
+
+      <!-- Meals -->
+      <div class="meals-section">
+          <ng-container *ngFor="let mealType of mealTypes; let i = index">
+            <div class="meal-card animate-slide-up" [style.animation-delay]="i * 0.1 + 's'">
+            <div class="meal-header">
+              <div class="meal-title-section">
+                <div class="meal-icon" [class]="'gradient-' + mealType">
+                  <ion-icon [name]="getMealIcon(mealType)"></ion-icon>
+                </div>
+                <div>
+                  <h3>{{ getMealTitle(mealType) }}</h3>
+                    <p class="meal-time">{{ getMeal(mealType)?.time || '--:--' }}</p>
+                </div>
+              </div>
+              <div class="meal-calories">
+                <span class="calories-value">{{ getMeal(mealType)?.totalCalories || 0 }}</span>
+                <span class="calories-label">cal</span>
+              </div>
+            </div>
+
+            <!-- Meal Items -->
+            <div class="meal-items">
+                <ng-container *ngIf="getMeal(mealType)?.items?.length; else emptyMeal">
+                  <div *ngFor="let item of getMeal(mealType)!.items">
+                    <div class="meal-item">
+                    <div class="item-info">
+                      <span class="item-name">{{ item.name }}</span>
+                      <div class="item-macros">
+                          <span *ngIf="item.protein">P: {{ item.protein }}g</span>
+                          <span *ngIf="item.carbs">C: {{ item.carbs }}g</span>
+                          <span *ngIf="item.fats">F: {{ item.fats }}g</span>
+                      </div>
+                    </div>
+                    <div class="item-actions">
+                      <span class="item-calories">{{ item.calories }} cal</span>
+                      <ion-button 
+                        fill="clear" 
+                        size="small"
+                          (click)="removeMealItem(mealType, item.id)"
+                        class="delete-button"
+                      >
+                        <ion-icon slot="icon-only" name="trash"></ion-icon>
+                      </ion-button>
+                    </div>
+                  </div>
+                  </div>
+                </ng-container>
+                <ng-template #emptyMeal>
+                  <p class="empty-meal">No items added yet</p>
+                </ng-template>
+            </div>
+
+            <!-- Add Button -->
+            <ion-button 
+              expand="block" 
+              fill="outline" 
+              size="small"
+              (click)="openAddModal(mealType)"
+              class="add-item-button"
+            >
+              <ion-icon slot="start" name="add"></ion-icon>
+              Add Item
+            </ion-button>
+          </div>
+          </ng-container>
+      </div>
+    </div>
+
+  <!-- FAB Button -->
+  <ion-fab slot="fixed" vertical="bottom" horizontal="end">
+    <ion-fab-button class="custom-fab">
+      <ion-icon name="add"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
+  <!-- Add Meal Item Modal -->
+  <ion-modal [isOpen]="isModalOpen()" (didDismiss)="closeModal()">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar class="modal-toolbar">
+          <ion-title>Add {{ getMealTitle(selectedMealType()) }} Item</ion-title>
+          <ion-button slot="end" fill="clear" (click)="closeModal()">
+            <ion-icon name="close"></ion-icon>
+          </ion-button>
+        </ion-toolbar>
+      </ion-header>
+
+      <ion-content class="modal-content">
+        <div class="modal-form">
+          <ion-list class="form-list">
+            <ion-item>
+              <ion-label position="stacked">Food Name *</ion-label>
+              <ion-input 
+                [(ngModel)]="itemName" 
+                placeholder="e.g., Grilled Chicken"
+              ></ion-input>
+            </ion-item>
+
+            <ion-item>
+              <ion-label position="stacked">Calories *</ion-label>
+              <ion-input 
+                type="number" 
+                [(ngModel)]="calories"
+                placeholder="0"
+              ></ion-input>
+            </ion-item>
+
+            <div class="macros-section">
+              <h4>Macronutrients (Optional)</h4>
+              <div class="macros-grid">
+                <ion-item>
+                  <ion-label position="stacked">Protein (g)</ion-label>
+                  <ion-input 
+                    type="number" 
+                    [(ngModel)]="protein"
+                    placeholder="0"
+                  ></ion-input>
+                </ion-item>
+
+                <ion-item>
+                  <ion-label position="stacked">Carbs (g)</ion-label>
+                  <ion-input 
+                    type="number" 
+                    [(ngModel)]="carbs"
+                    placeholder="0"
+                  ></ion-input>
+                </ion-item>
+
+                <ion-item>
+                  <ion-label position="stacked">Fats (g)</ion-label>
+                  <ion-input 
+                    type="number" 
+                    [(ngModel)]="fats"
+                    placeholder="0"
+                  ></ion-input>
+                </ion-item>
+              </div>
+
+              <ion-button 
+                expand="block" 
+                fill="outline" 
+                size="small"
+                (click)="calculateCaloriesFromMacros()"
+                class="calculate-button"
+              >
+                Calculate Calories from Macros
+              </ion-button>
+            </div>
+          </ion-list>
+
+          <div class="modal-actions">
+            <ion-button expand="block" (click)="addMealItem()" class="add-button">
+              <ion-icon slot="start" name="checkmark"></ion-icon>
+              Add Item
+            </ion-button>
+          </div>
+        </div>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+</ion-content>
