@@ -1,0 +1,7 @@
+{
+  "name": "mangalam",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular-standalone"
+}
